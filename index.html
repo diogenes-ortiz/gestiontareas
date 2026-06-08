@@ -1,178 +1,50 @@
-    +'</div>';
-  }).join("");
-  var cardsHtml='<div class="task-cards">'+cards+'</div>';
-
-  return tableHtml+cardsHtml;
-}
-
-function renderPartners(){
-  refreshTeams();
-  const active=tasks.filter(t=>!t.archived);
-  const totalActive=active.length;
-  const byOwner=TEAMS.map(n=>({name:n,active:active.filter(t=>t.owners.includes(n)).length,completed:tasks.filter(t=>t.status==="Completado"&&t.owners.includes(n)).length}));
-  const byBrand=BRANDS.map(b=>({brand:b,count:tasks.filter(t=>t.brand===b).length})).filter(b=>b.count>0).sort((a,b)=>b.count-a.count);
-  const pendCount=partnerTasks.filter(t=>t.status==="Pendiente").length;
-  const cursoCount=partnerTasks.filter(t=>t.status==="En curso").length;
-  const hechoCount=partnerTasks.filter(t=>t.status==="Hecho").length;
-  const fcEl=document.getElementById("pt-filter-cat");
-  const fsEl=document.getElementById("pt-filter-st");
-  const fc=fcEl?fcEl.value:"Todas";
-  const fs=fsEl?fsEl.value:"Activas";
-  const filteredP=partnerTasks.filter(t=>fc==="Todas"||t.category===fc).filter(t=>fs==="Activas"?t.status!=="Hecho":fs==="Todas"?true:t.status===fs);
-
-  const statsH=[
-    {label:"Tareas agencia activas",val:totalActive,color:"#3b82f6"},
-    {label:"Socios pendientes",val:pendCount+cursoCount,color:"#f97316"},
-    {label:"Socios completadas",val:hechoCount,color:"#22c55e"},
-  ].map(function(s){return '<div class="stat-card" style="border:1px solid '+s.color+'33"><div class="stat-num" style="color:'+s.color+'">'+s.val+'</div><div class="stat-label">'+s.label+'</div></div>';}).join("");
-
-  const personRows=byOwner.map(function(o){
-    const w=Math.min(100,(o.active/Math.max(1,totalActive))*100*3);
-    const col=getOwnerColor(o.name)||"#475569";
-    return '<div class="person-row"><span class="avatar" style="width:32px;height:32px;background:'+col+';font-size:13px">'+o.name[0]+'</span><div style="flex:1"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:13px;font-weight:700;color:#f1f5f9">'+o.name+'</span><span style="font-size:12px;color:#475569">'+o.active+' activas \xb7 <span style="color:#4ade80">'+o.completed+' \u2713</span></span></div><div class="bar-wrap"><div class="bar-fill" style="width:'+w+'%;background:'+col+'"></div></div></div></div>';
-  }).join("");
-
-  const brandRows=byBrand.map(function(b){return '<div class="brand-row"><span style="font-size:13px;color:#f1f5f9">'+b.brand+'</span><span class="brand-count">'+b.count+'</span></div>';}).join("");
-
-  const catOpts=["Todas",...PARTNER_CATS].map(function(c){return '<option value="'+c+'"'+(fc===c?' selected':'')+'>'+c+'</option>';}).join("");
-  const stOpts=[{v:"Activas",l:"Activas"},{v:"Todas",l:"Todas"},...PARTNER_STATUSES.map(function(s){return{v:s,l:s};})].map(function(o){return '<option value="'+o.v+'"'+(fs===o.v?' selected':'')+'>'+o.l+'</option>';}).join("");
-
-  const ptRows=filteredP.length===0?'<div style="padding:40px;text-align:center;color:#334155;font-size:14px">No hay tareas de socios</div>':
-    filteredP.map(function(pt,i){
-      const ss=PARTNER_STATUS_STYLES[pt.status]||PARTNER_STATUS_STYLES["Pendiente"];
-      const catColor=CAT_COLORS[pt.category]||"#475569";
-      const dl=pt.dueDate?daysLeft(pt.dueDate):null;
-      const dateColor=dl===null?"#475569":dl<0?"#ef4444":dl<=3?"#f97316":"#475569";
-      const notesHtml=pt.notes?'<div style="color:#475569;font-size:12px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:400px">'+pt.notes+'</div>':"";
-      const dateHtml=pt.dueDate?'<span style="font-size:12px;color:'+dateColor+';flex-shrink:0;font-weight:'+(dl<=3?700:400)+'">'+fmt(pt.dueDate)+'</span>':"";
-      const doneClass=pt.status==="Hecho"?" done":"";
-      return '<div class="pt-row">'
-        +'<div style="width:8px;height:8px;border-radius:50%;background:'+catColor+';flex-shrink:0"></div>'
-        +'<div style="flex:1;min-width:0">'
-          +'<div style="display:flex;align-items:center;gap:8px">'
-            +'<span class="pt-title'+doneClass+'">'+pt.title+'</span>'
-            +'<span class="pt-cat" style="color:'+catColor+';background:'+catColor+'18">'+pt.category+'</span>'
-          +'</div>'
-          +notesHtml
-        +'</div>'
-        +'<span style="font-size:12px;color:#64748b;flex-shrink:0">'+pt.owner+'</span>'
-        +dateHtml
-        +pStatusBadge(pt.status,pt.id)
-        +'<div class="pt-actions">'
-          +'<button class="action-btn" onclick="openEditPTask(\''+pt.id+'\')">&#9999;&#65039;</button>'
-          +'<button class="action-btn" onclick="deletePTask(\''+pt.id+'\')">&#128465;&#65039;</button>'
-        +'</div>'
-      +'</div>';
-    }).join("");
-
-  const memberRows=teamData.map(function(m){
-    const safeRole=(m.role||"").replace(/"/g,"&quot;");
-    const safeName=m.name.replace(/'/g,"\\'");
-    return '<div class="team-member-row">'
-      +'<span class="avatar" data-member="'+m.name+'" style="width:36px;height:36px;background:'+m.color+';font-size:14px;flex-shrink:0">'+m.name[0]+'</span>'
-      +'<div class="team-member-meta">'
-        +'<span style="font-size:14px;font-weight:700;color:#f1f5f9">'+m.name+'</span>'
-        +(m.role?'<span style="font-size:11px;color:#94a3b8;margin-left:8px">'+m.role+'</span>':"")
-        +'<div class="team-member-controls">'
-        +'<input class="team-member-role" type="text" value="'+safeRole+'" placeholder="Rol (ej: Disenadora)" onchange="updateMemberRole(\''+safeName+'\',this.value)"/>'
-        +'<input type="color" value="'+m.color+'" style="width:32px;height:32px;border:none;border-radius:6px;cursor:pointer;padding:0" onchange="updateMemberColor(\''+safeName+'\',this.value)" title="Color del avatar"/>'
-        +'<button class="action-btn" style="color:#ef4444;border-color:#ef444433" onclick="removeTeamMember(\''+safeName+'\')" title="Eliminar">&#128465;&#65039;</button>'
-        +'</div>'
-      +'</div>'
-    +'</div>';
-  }).join("");
-
-  const nextColor=COLOR_POOL[teamData.length%COLOR_POOL.length];
-
-  return '<h2 style="color:#f97316;font-size:18px;font-weight:800;margin:0 0 24px">&#128274; Panel de socios</h2>'
-    +'<div class="partners-stats">'+statsH+'</div>'
-    +'<div class="two-col">'
-      +'<div class="panel"><h3>Carga por persona</h3>'+personRows+'</div>'
-      +'<div class="panel"><h3>Tareas por marca</h3>'+brandRows+'</div>'
-    +'</div>'
-    +'<div class="partner-tasks-box">'
-      +'<div class="partner-tasks-header">'
-        +'<div><h3 style="margin:0;color:#f97316;font-weight:800;font-size:15px">&#129309; Tareas de socios</h3><p style="margin:2px 0 0;color:#475569;font-size:12px">Privado &middot; Solo Dio y Santi</p></div>'
-        +'<div class="partner-toolbar">'
-          +'<select class="inp" id="pt-filter-cat" style="width:auto;font-size:12px;padding:5px 10px" onchange="render()">'+catOpts+'</select>'
-          +'<select class="inp" id="pt-filter-st" style="width:auto;font-size:12px;padding:5px 10px" onchange="render()">'+stOpts+'</select>'
-          +'<button class="btn-save" style="background:#f97316;padding:6px 16px;font-size:12px" onclick="openNewPTask()">+ Nueva</button>'
-        +'</div>'
-      +'</div>'
-      +'<div>'+ptRows+'</div>'
-    +'</div>'
-    +'<div style="margin-top:28px;background:#0a0c14;border:1px solid #3b82f622;border-radius:16px;overflow:hidden">'
-      +'<div style="padding:18px 24px;border-bottom:1px solid #3b82f622;background:#0f1218">'
-        +'<h3 style="margin:0;color:#3b82f6;font-weight:800;font-size:15px">&#128101; Gestion del equipo</h3>'
-        +'<p style="margin:2px 0 0;color:#475569;font-size:12px">Agrega o remove miembros del equipo</p>'
-      +'</div>'
-      +'<div style="padding:20px 24px">'
-        +memberRows
-        +'<div style="display:flex;gap:8px;align-items:center;margin-top:16px;flex-wrap:wrap">'
-          +'<input type="text" id="new-member-name" placeholder="Nombre" style="background:#1e293b;border:1px solid #334155;border-radius:8px;color:#f1f5f9;padding:7px 12px;font-size:13px;width:130px;outline:none"/>'
-          +'<input type="text" id="new-member-role" placeholder="Rol (opcional)" style="background:#1e293b;border:1px solid #334155;border-radius:8px;color:#f1f5f9;padding:7px 12px;font-size:13px;width:160px;outline:none"/>'
-          +'<input type="color" id="new-member-color" value="'+nextColor+'" style="width:36px;height:36px;border:none;border-radius:8px;cursor:pointer;padding:0" title="Color"/>'
-          +'<button class="btn-save" style="background:#3b82f6;padding:7px 18px;font-size:13px" onclick="addTeamMember()">+ Agregar</button>'
-        +'</div>'
-      +'</div>'
-    +'</div>';
-}
-
-function refreshTeams() { TEAMS = getTeams(); }
-
-async function addTeamMember() {
-  const nameEl = document.getElementById("new-member-name");
-  const colorEl = document.getElementById("new-member-color");
-  const roleEl = document.getElementById("new-member-role");
-  const name = nameEl.value.trim();
-  if (!name) return;
-  if (teamData.find(t => t.name.toLowerCase() === name.toLowerCase())) {
-    alert("Ya existe un miembro con ese nombre."); return;
-  }
-  var newMember={name, color:colorEl.value, role:roleEl.value.trim()};
-  teamData.push(newMember);
-  try{await dbSaveTeam();}catch(e){console.warn(e);}
-  refreshTeams(); nameEl.value=""; roleEl.value=""; render();
-}
-
-async function removeTeamMember(name) {
-  if (!confirm(`¿Eliminar a ${name} del equipo?`)) return;
-  teamData = teamData.filter(t => t.name !== name);
-  try{await dbDeleteMember(name);}catch(e){console.warn(e);}
-  refreshTeams(); render();
-}
-
-async function updateMemberColor(name, color) {
-  teamData = teamData.map(t => t.name === name ? {...t, color} : t);
-  try{await dbSaveTeam();}catch(e){console.warn(e);}
-  document.querySelectorAll(`[data-member="${name}"]`).forEach(el => el.style.background = color);
-}
-
-async function updateMemberRole(name, role) {
-  teamData = teamData.map(t => t.name === name ? {...t, role} : t);
-  try{await dbSaveTeam();}catch(e){console.warn(e);}
-}
-
-function render() {
-  const c=document.getElementById("content");
-  if(currentTab==="partners"&&isPartner){ c.innerHTML=renderPartners(); return; }
-  let html="";
-  if(currentTab==="tasks") html+=renderDashboard();
-  html+=renderFilters();
-  html+=renderTable();
-  c.innerHTML=html;
-}
-
-// Init selects
-(function(){
-  const fb=document.getElementById("f-brand"); BRANDS.forEach(b=>{const o=document.createElement("option");o.value=b;o.textContent=b;fb.appendChild(o);});
-  const fs=document.getElementById("f-status"); STATUSES.forEach(s=>{const o=document.createElement("option");o.value=s;o.textContent=s;fs.appendChild(o);});
-  const pc=document.getElementById("pt-cat"); PARTNER_CATS.forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=c;pc.appendChild(o);});
-  const ps=document.getElementById("pt-status"); PARTNER_STATUSES.forEach(s=>{const o=document.createElement("option");o.value=s;o.textContent=s;ps.appendChild(o);});
-})();
-
-// Load from Supabase on start
-dbLoadAll().catch(function(){render();});
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ANM - Gestion de trabajo</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#030712;color:#f1f5f9;font-family:Segoe UI,system-ui,sans-serif;min-height:100vh}
+button,input,select,textarea{font-family:inherit}button{cursor:pointer}
+.header{position:sticky;top:0;z-index:20;background:#0a0f1e;border-bottom:1px solid #1e293b;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}.logo{width:36px;height:36px;border-radius:10px;background:#3b82f6;display:grid;place-items:center;font-weight:900}.brand-title{font-size:15px;font-weight:900}.brand-sub{font-size:12px;color:#64748b}
+.nav{display:flex;gap:6px;flex-wrap:wrap}.tab-btn,.primary-btn{border:0;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:800}.tab-btn{background:transparent;color:#64748b}.tab-btn.active{background:#1e293b;color:#f8fafc}.primary-btn{background:#3b82f6;color:white}
+.content{padding:16px 16px 80px;max-width:1280px;margin:auto}.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}.stat-card{background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:12px}.stat-num{font-size:22px;font-weight:900}.stat-label{font-size:10px;color:#64748b;text-transform:uppercase;font-weight:800;letter-spacing:.6px;margin-top:2px}
+.filters{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#0a0f1e;border:1px solid #1e293b;border-radius:12px;padding:10px;margin-bottom:14px}.filter{display:flex;align-items:center;gap:6px}.filter label{color:#64748b;font-size:11px;font-weight:800;text-transform:uppercase}.inp{background:#1e293b;border:1px solid #334155;border-radius:8px;color:#f8fafc;padding:8px 10px;font-size:13px;outline:none;width:100%}.inp:focus{border-color:#3b82f6}.count{margin-left:auto;color:#64748b;font-size:12px}
+.table-wrap{background:#0a0f1e;border:1px solid #1e293b;border-radius:14px;overflow:auto}table{width:100%;border-collapse:collapse;min-width:920px}th{background:#0f172a;color:#64748b;font-size:10px;text-transform:uppercase;letter-spacing:.7px;text-align:left;padding:10px 12px;border-bottom:1px solid #1e293b}td{padding:10px 12px;border-bottom:1px solid #1e293b;vertical-align:middle;font-size:13px}tr:hover td{background:#1e293b22}
+.badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 10px;font-size:11px;font-weight:900;border:1px solid transparent;white-space:nowrap}.status-select{appearance:none}.avatar{display:inline-grid;place-items:center;aspect-ratio:1/1;min-width:var(--avatar-size,28px);width:var(--avatar-size,28px);height:var(--avatar-size,28px);min-height:var(--avatar-size,28px);max-width:var(--avatar-size,28px);max-height:var(--avatar-size,28px);border-radius:50%;color:white;font-weight:900;font-size:12px;line-height:1;border:2px solid #0f172a;margin-right:-6px;flex:0 0 var(--avatar-size,28px);overflow:hidden}.actions{display:flex;gap:5px;justify-content:flex-end}.icon-btn{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:7px;padding:6px 9px;font-size:12px;font-weight:800}
+.cards{display:none;flex-direction:column;gap:12px}.task-card{background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:14px;min-width:0}.card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}.card-title{font-size:15px;font-weight:900;line-height:1.3;overflow-wrap:anywhere}.card-brand{display:block;color:#94a3b8;font-size:12px;margin-top:4px;overflow-wrap:anywhere}.card-owners{display:flex;flex-shrink:0;padding-left:6px}.card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.field{background:#0a0f1e;border:1px solid #1e293b;border-radius:10px;padding:9px 10px;min-width:0}.field.wide{grid-column:1/-1}.field-label{display:block;color:#64748b;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}.field-value{display:flex;align-items:flex-start;gap:7px;flex-wrap:wrap;color:#cbd5e1;font-size:12px;line-height:1.4;overflow-wrap:anywhere}.card-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #1e293b}.empty{padding:40px;text-align:center;color:#64748b;background:#0a0f1e;border:1px solid #1e293b;border-radius:12px}
+.overlay{position:fixed;inset:0;background:#000b;z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow:auto}.hidden{display:none}.modal{background:#0f172a;border:1px solid #1e293b;border-radius:14px;width:min(620px,100%);padding:20px;margin:auto}.modal h2{font-size:18px;margin-bottom:16px}.form{display:grid;gap:12px}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.group{display:flex;flex-direction:column;gap:5px}.group label{font-size:11px;font-weight:900;color:#64748b;text-transform:uppercase}textarea.inp{min-height:80px;resize:vertical}.owner-list{display:flex;gap:8px;flex-wrap:wrap}.owner-chip{border:1px solid #334155;background:#1e293b;color:#cbd5e1;border-radius:999px;padding:7px 11px;font-size:12px;font-weight:800}.owner-chip.active{background:#3b82f6;color:white;border-color:#3b82f6}.modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}.cancel{background:#1e293b;color:#94a3b8}.save{background:#3b82f6;color:white}.cancel,.save{border:0;border-radius:8px;padding:9px 16px;font-weight:900}
+@media(max-width:640px){.header{padding:10px}.brand{width:100%}.nav{width:100%;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}.primary-btn{grid-column:1/-1}.tab-btn,.primary-btn{min-height:38px;width:100%;padding:8px 6px}.content{padding:12px 10px 80px}.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.filters{display:grid;grid-template-columns:1fr;gap:8px}.filter{display:grid;grid-template-columns:82px minmax(0,1fr);gap:8px}.count{margin-left:0;justify-self:end}.table-wrap{display:none}.cards{display:flex}.task-card{padding:12px}.card-grid{grid-template-columns:1fr}.field{padding:10px}.badge{white-space:normal;line-height:1.25}.row{grid-template-columns:1fr}.modal{padding:16px;margin:0}.modal-footer{display:grid;grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header class="header"><div class="brand"><div class="logo">ANM</div><div><div class="brand-title">Gestion de trabajo</div><div class="brand-sub">Tareas, responsables y vencimientos</div></div></div><div class="nav"><button class="tab-btn active" id="tab-active" onclick="setTab('active')">Tareas</button><button class="tab-btn" id="tab-archive" onclick="setTab('archive')">Archivo</button><button class="tab-btn" onclick="seedData()">Demo</button><button class="primary-btn" onclick="openTask()">Nueva tarea</button></div></header>
+<main class="content" id="app"></main>
+<div class="overlay hidden" id="modal" onclick="closeOnBg(event)"><div class="modal"><h2 id="modal-title">Nueva tarea</h2><div class="form"><div class="group"><label>Tema</label><input class="inp" id="f-theme" /></div><div class="row"><div class="group"><label>Marca</label><input class="inp" id="f-brand" /></div><div class="group"><label>Status</label><select class="inp" id="f-status"></select></div></div><div class="row"><div class="group"><label>Fecha estimada</label><input class="inp" type="date" id="f-due" /></div><div class="group"><label>Fecha real</label><input class="inp" type="date" id="f-real" /></div></div><div class="row"><div class="group"><label>Horas estimadas</label><input class="inp" type="number" min="0" step="0.5" id="f-hours" /></div><div class="group"><label>Urgente</label><select class="inp" id="f-urgent"><option value="false">No</option><option value="true">Si</option></select></div></div><div class="group"><label>Responsables</label><div class="owner-list" id="owner-list"></div></div><div class="group"><label>Comentarios</label><textarea class="inp" id="f-comments"></textarea></div></div><div class="modal-footer"><button class="cancel" onclick="closeTask()">Cancelar</button><button class="save" onclick="saveTask()">Guardar</button></div></div></div>
+<script>
+const STATUSES=["Por hacer","En progreso","En revision","Aprobado","Completado"];
+const STATUS_COLORS={"Por hacer":{bg:"#334155",fg:"#cbd5e1",bd:"#475569"},"En progreso":{bg:"#1d4ed8",fg:"#dbeafe",bd:"#3b82f6"},"En revision":{bg:"#7c2d12",fg:"#fed7aa",bd:"#f97316"},"Aprobado":{bg:"#14532d",fg:"#bbf7d0",bd:"#22c55e"},"Completado":{bg:"#064e3b",fg:"#a7f3d0",bd:"#10b981"}};
+const PEOPLE=[{name:"Dio",color:"#3b82f6"},{name:"Santi",color:"#f97316"},{name:"Luisina",color:"#22c55e"},{name:"Luli",color:"#a855f7"},{name:"Ori",color:"#ec4899"}];
+let currentTab="active",editingId=null,selectedOwners=[],filters={owner:"Todos",brand:"Todas",status:"Activas",sort:"dueDate"};
+let tasks=JSON.parse(localStorage.getItem("anm_tasks")||"null")||[{id:id(),theme:"Calendario de contenido Mayo",brand:"Mi Pileta",comments:"Creacion e ideacion de ideas",owners:["Luisina"],status:"En progreso",dueDate:addDays(2),actualDate:"",estimatedHours:3,urgent:false,archived:false},{id:id(),theme:"Media Kit",brand:"Mi Pileta",comments:"Actualizar presentacion comercial con metricas nuevas y piezas visuales.",owners:["Luisina"],status:"Por hacer",dueDate:addDays(5),actualDate:"",estimatedHours:4,urgent:true,archived:false},{id:id(),theme:"Revision de copies campana",brand:"ANM",comments:"Validar tono, claims y llamados a la accion antes de enviar.",owners:["Dio","Santi"],status:"En revision",dueDate:addDays(1),actualDate:"",estimatedHours:2,urgent:false,archived:false},{id:id(),theme:"Landing de temporada",brand:"Cliente Demo",comments:"Ajustar secciones, responsive y formulario.",owners:["Ori"],status:"Aprobado",dueDate:addDays(8),actualDate:"",estimatedHours:6,urgent:false,archived:false}];
+init();
+function init(){document.getElementById("f-status").innerHTML=STATUSES.map(s=>`<option>${s}</option>`).join("");renderOwnerButtons();render()}
+function id(){return Math.random().toString(36).slice(2)+Date.now().toString(36)}function addDays(n){const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)}function saveLocal(){localStorage.setItem("anm_tasks",JSON.stringify(tasks))}function fmt(d){if(!d)return "-";const x=new Date(d+"T00:00:00");return x.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit",year:"numeric"})}function daysLeft(d){const a=new Date();a.setHours(0,0,0,0);const b=new Date(d+"T00:00:00");return Math.round((b-a)/86400000)}function colorFor(name){return(PEOPLE.find(p=>p.name===name)||PEOPLE[0]).color}function avatar(name){return `<span class="avatar" style="--avatar-size:28px;background:${colorFor(name)}">${name[0]}</span>`}function statusBadge(status){const s=STATUS_COLORS[status]||STATUS_COLORS["Por hacer"];return `<span class="badge" style="background:${s.bg};color:${s.fg};border-color:${s.bd}">${status}</span>`}function dueText(d){if(!d)return `<span style="color:#64748b">Sin fecha</span>`;const left=daysLeft(d),color=left<0?"#ef4444":left<=2?"#f97316":left<=5?"#fbbf24":"#4ade80",text=left<0?`${Math.abs(left)}d atrasada`:left===0?"Hoy":`${left}d`;return `<span style="color:${color};font-weight:900">${text}</span><span style="color:#64748b">(${fmt(d)})</span>`}
+function setTab(tab){currentTab=tab;document.getElementById("tab-active").classList.toggle("active",tab==="active");document.getElementById("tab-archive").classList.toggle("active",tab==="archive");render()}
+function getFiltered(){let out=tasks.filter(t=>currentTab==="archive"?t.archived:!t.archived);if(filters.owner!=="Todos")out=out.filter(t=>t.owners.includes(filters.owner));if(filters.brand!=="Todas")out=out.filter(t=>t.brand===filters.brand);if(currentTab==="active"&&filters.status!=="Todas")out=out.filter(t=>filters.status==="Activas"?t.status!=="Completado":t.status===filters.status);out.sort((a,b)=>filters.sort==="brand"?a.brand.localeCompare(b.brand):filters.sort==="status"?STATUSES.indexOf(a.status)-STATUSES.indexOf(b.status):(a.dueDate||"9999").localeCompare(b.dueDate||"9999"));return out}
+function render(){const app=document.getElementById("app"),active=tasks.filter(t=>!t.archived),filtered=getFiltered(),brands=["Todas",...new Set(tasks.map(t=>t.brand).filter(Boolean))],people=["Todos",...PEOPLE.map(p=>p.name)];const stats=STATUSES.map(s=>{const c=STATUS_COLORS[s],n=active.filter(t=>t.status===s).length;return `<div class="stat-card" style="border-color:${c.bd}55"><div class="stat-num" style="color:${c.fg}">${n}</div><div class="stat-label">${s}</div></div>`}).join("");app.innerHTML=`${currentTab==="active"?`<div class="stats-grid">${stats}</div>`:""}<div class="filters"><div class="filter"><label>Persona</label><select class="inp" onchange="filters.owner=this.value;render()">${people.map(x=>`<option ${filters.owner===x?"selected":""}>${x}</option>`).join("")}</select></div><div class="filter"><label>Marca</label><select class="inp" onchange="filters.brand=this.value;render()">${brands.map(x=>`<option ${filters.brand===x?"selected":""}>${x}</option>`).join("")}</select></div>${currentTab==="active"?`<div class="filter"><label>Status</label><select class="inp" onchange="filters.status=this.value;render()">${["Activas","Todas",...STATUSES].map(x=>`<option ${filters.status===x?"selected":""}>${x}</option>`).join("")}</select></div>`:""}<div class="filter"><label>Orden</label><select class="inp" onchange="filters.sort=this.value;render()"><option value="dueDate" ${filters.sort==="dueDate"?"selected":""}>Fecha</option><option value="brand" ${filters.sort==="brand"?"selected":""}>Marca</option><option value="status" ${filters.sort==="status"?"selected":""}>Status</option></select></div><span class="count">${filtered.length} tarea${filtered.length!==1?"s":""}</span></div>${filtered.length?renderTable(filtered)+renderCards(filtered):`<div class="empty">No hay tareas para mostrar</div>`}`}
+function renderTable(list){return `<div class="table-wrap"><table><thead><tr><th>Tema</th><th>Marca</th><th>Comentarios</th><th>Responsable</th><th>Status</th><th>Estimada</th><th>Real</th><th>Horas</th><th></th></tr></thead><tbody>${list.map(t=>`<tr><td><strong>${t.urgent?"! ":""}${t.theme}</strong></td><td>${t.brand}</td><td style="max-width:260px;color:#94a3b8">${t.comments||"-"}</td><td>${t.owners.map(avatar).join("")}</td><td>${statusControl(t)}</td><td>${dueText(t.dueDate)}</td><td>${t.actualDate?fmt(t.actualDate):"-"}</td><td>${t.estimatedHours?t.estimatedHours+"h":"-"}</td><td><div class="actions">${actionButtons(t)}</div></td></tr>`).join("")}</tbody></table></div>`}
+function renderCards(list){return `<div class="cards">${list.map(t=>`<article class="task-card"><div class="card-head"><div><div class="card-title">${t.urgent?"! ":""}${t.theme}</div><span class="card-brand">${t.brand}</span></div><div class="card-owners">${t.owners.map(avatar).join("")}</div></div><div class="card-grid"><div class="field wide"><span class="field-label">Responsable</span><div class="field-value">${t.owners.map(avatar).join("")}<span>${t.owners.join(", ")}</span></div></div><div class="field"><span class="field-label">Status</span><div class="field-value">${statusControl(t)}</div></div><div class="field"><span class="field-label">Fecha estimada</span><div class="field-value">${dueText(t.dueDate)}</div></div><div class="field"><span class="field-label">Fecha real</span><div class="field-value">${t.actualDate?fmt(t.actualDate):"-"}</div></div><div class="field"><span class="field-label">Horas</span><div class="field-value">${t.estimatedHours?t.estimatedHours+"h":"-"}</div></div>${t.comments?`<div class="field wide"><span class="field-label">Comentarios</span><div class="field-value">${t.comments}</div></div>`:""}</div><div class="card-actions">${actionButtons(t)}</div></article>`).join("")}</div>`}
+function statusControl(t){return `<select class="inp status-select" style="background:${STATUS_COLORS[t.status].bg};color:${STATUS_COLORS[t.status].fg};border-color:${STATUS_COLORS[t.status].bd};font-weight:900" onchange="changeStatus('${t.id}',this.value)">${STATUSES.map(s=>`<option ${t.status===s?"selected":""}>${s}</option>`).join("")}</select>`}
+function actionButtons(t){const archive=t.status==="Completado"&&!t.archived?`<button class="icon-btn" onclick="archiveTask('${t.id}')">Archivar</button>`:"",restore=t.archived?`<button class="icon-btn" onclick="restoreTask('${t.id}')">Restaurar</button>`:"";return `<button class="icon-btn" onclick="openTask('${t.id}')">Editar</button>${archive}${restore}<button class="icon-btn" onclick="deleteTask('${t.id}')">Borrar</button>`}
+function renderOwnerButtons(){document.getElementById("owner-list").innerHTML=PEOPLE.map(p=>`<button type="button" class="owner-chip" id="owner-${p.name}" onclick="toggleOwner('${p.name}')">${p.name}</button>`).join("")}function toggleOwner(name){selectedOwners=selectedOwners.includes(name)?selectedOwners.filter(x=>x!==name):[...selectedOwners,name];PEOPLE.forEach(p=>document.getElementById("owner-"+p.name).classList.toggle("active",selectedOwners.includes(p.name)))}
+function openTask(idToEdit){editingId=idToEdit||null;const t=tasks.find(x=>x.id===editingId)||{theme:"",brand:"",comments:"",owners:[],status:"Por hacer",dueDate:"",actualDate:"",estimatedHours:"",urgent:false};document.getElementById("modal-title").textContent=editingId?"Editar tarea":"Nueva tarea";document.getElementById("f-theme").value=t.theme;document.getElementById("f-brand").value=t.brand;document.getElementById("f-status").value=t.status;document.getElementById("f-due").value=t.dueDate||"";document.getElementById("f-real").value=t.actualDate||"";document.getElementById("f-hours").value=t.estimatedHours||"";document.getElementById("f-urgent").value=String(!!t.urgent);document.getElementById("f-comments").value=t.comments||"";selectedOwners=[...(t.owners||[])];PEOPLE.forEach(p=>document.getElementById("owner-"+p.name).classList.toggle("active",selectedOwners.includes(p.name)));document.getElementById("modal").classList.remove("hidden")}
+function closeTask(){document.getElementById("modal").classList.add("hidden")}function closeOnBg(e){if(e.target.id==="modal")closeTask()}
+function saveTask(){const data={theme:document.getElementById("f-theme").value.trim(),brand:document.getElementById("f-brand").value.trim(),status:document.getElementById("f-status").value,dueDate:document.getElementById("f-due").value,actualDate:document.getElementById("f-real").value,estimatedHours:document.getElementById("f-hours").value,urgent:document.getElementById("f-urgent").value==="true",comments:document.getElementById("f-comments").value.trim(),owners:selectedOwners.length?selectedOwners:["Dio"]};if(!data.theme){alert("Agrega un tema.");return}if(editingId)tasks=tasks.map(t=>t.id===editingId?{...t,...data}:t);else tasks.unshift({id:id(),archived:false,...data});saveLocal();closeTask();render()}
+function changeStatus(id,value){tasks=tasks.map(t=>t.id===id?{...t,status:value,actualDate:value==="Completado"&&!t.actualDate?new Date().toISOString().slice(0,10):t.actualDate}:t);saveLocal();render()}function archiveTask(id){tasks=tasks.map(t=>t.id===id?{...t,archived:true}:t);saveLocal();render()}function restoreTask(id){tasks=tasks.map(t=>t.id===id?{...t,archived:false}:t);saveLocal();render()}function deleteTask(id){if(confirm("Borrar esta tarea?")){tasks=tasks.filter(t=>t.id!==id);saveLocal();render()}}function seedData(){localStorage.removeItem("anm_tasks");location.reload()}
 </script>
 </body>
 </html>
