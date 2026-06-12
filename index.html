@@ -106,6 +106,17 @@ textarea.inp{resize:vertical;height:70px}
 .bar-fill{height:100%;border-radius:3px}
 .brand-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #1e293b55}
 .brand-count{font-size:12px;font-weight:700;color:#3b82f6;background:#1e3a5f;padding:2px 10px;border-radius:20px}
+.admin-section{margin-top:28px;background:#0a0c14;border:1px solid #3b82f622;border-radius:16px;overflow:hidden}
+.admin-section-head{padding:18px 24px;border-bottom:1px solid #3b82f622;background:#0f1218}
+.admin-section-head h3{margin:0;color:#3b82f6;font-weight:800;font-size:15px}
+.admin-section-head p{margin:2px 0 0;color:#475569;font-size:12px}
+.admin-section-body{padding:20px 24px}
+.admin-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #1e293b44}
+.admin-row-main{flex:1;min-width:0}
+.admin-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.admin-form{display:flex;gap:8px;align-items:center;margin-top:16px;flex-wrap:wrap}
+.admin-input{background:#1e293b;border:1px solid #334155;border-radius:8px;color:#f1f5f9;padding:7px 12px;font-size:13px;outline:none}
+.admin-input.small{width:130px}.admin-input.medium{width:160px}
 .partner-tasks-box{background:#0a0c14;border:1px solid #f9731622;border-radius:16px;overflow:hidden}
 .partner-tasks-header{padding:14px 18px;border-bottom:1px solid #f9731622;display:flex;align-items:center;justify-content:space-between;background:#0f1218;flex-wrap:wrap;gap:8px}
 .pt-row{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid #1e293b44;transition:background .12s;flex-wrap:wrap}
@@ -153,6 +164,12 @@ select.inp{cursor:pointer}
   /* Partners */
   .partners-stats{grid-template-columns:1fr 1fr}
   .two-col{grid-template-columns:1fr}
+  .admin-section-head,.admin-section-body{padding:14px}
+  .admin-row{align-items:flex-start;flex-wrap:wrap}
+  .admin-actions{width:100%}
+  .admin-actions .admin-input{flex:1;min-width:130px}
+  .admin-form{display:grid;grid-template-columns:1fr;align-items:stretch}
+  .admin-input.small,.admin-input.medium,.admin-form .admin-input,.admin-form .btn-save{width:100%}
   /* Modal */
   .form-row-2{grid-template-columns:1fr}
   .form-row-4{grid-template-columns:1fr 1fr}
@@ -171,7 +188,7 @@ select.inp{cursor:pointer}
   <div class="header-right">
     <button class="tab-btn active" id="btn-tasks" onclick="setTab('tasks')">Tareas</button>
     <button class="tab-btn" id="btn-archive" onclick="setTab('archive')">Archivo</button>
-    <button class="tab-btn" id="btn-partners" onclick="openPartners()">Socios</button>
+    <button class="tab-btn" id="btn-partners" onclick="openPartners()">Admin</button>
     <button class="primary-btn" onclick="openNewTask()">+ Nueva tarea</button>
   </div>
 </div>
@@ -212,9 +229,9 @@ select.inp{cursor:pointer}
 <!-- UNLOCK MODAL -->
 <div class="overlay hidden" id="unlock-modal" onclick="closeModalOnBg(event,'unlock-modal')">
   <div class="unlock-modal">
-    <div class="icon">Socios</div>
-    <h3>Area de socios</h3>
-    <p>Solo para Dio y Santi</p>
+    <div class="icon">Admin</div>
+    <h3>Area admin</h3>
+    <p>Acceso privado</p>
     <input type="password" class="inp" id="pass-input" placeholder="Contrasena" style="text-align:center;margin-bottom:12px" onkeydown="if(event.key==='Enter')tryPass()"/>
     <p class="err-msg hidden" id="pass-err">Contrasena incorrecta</p>
     <button class="btn-save" style="width:100%" onclick="tryPass()">Entrar</button>
@@ -224,7 +241,7 @@ select.inp{cursor:pointer}
 <!-- PARTNER TASK MODAL -->
 <div class="overlay hidden" id="pt-modal" onclick="closeModalOnBg(event,'pt-modal')">
   <div class="modal" style="max-width:480px;border-color:#f9731633">
-    <h2 id="pt-modal-title" style="color:#f97316;font-size:16px">Nueva tarea de socios</h2>
+    <h2 id="pt-modal-title" style="color:#f97316;font-size:16px">Nueva tarea admin</h2>
     <div class="form-grid">
       <div class="form-group"><label>Titulo</label><input class="inp" id="pt-title" placeholder="Ej: Revisar presupuesto Q3"/></div>
       <div class="form-row form-row-2">
@@ -250,7 +267,7 @@ const SUPA_URL = "https://bndrrztjfshnowpwrzao.supabase.co";
 const SUPA_KEY = "sb_publishable_dKiUj5u_YQMGRajZrFrMXA_1JV7s6bi";
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-function normalizeStatus(s){return String(s||"Por hacer").replace("En revisiÃ³n","En revision").replace("En revisión","En revision");}
+function normalizeStatus(s){return String(s||"Por hacer").replace(/En revisi..n/i,"En revision");}
 function dbToTask(r){return{id:r.id,brand:r.brand||"",theme:r.theme||"",comments:r.comments||"",status:normalizeStatus(r.status),owners:r.owners||[],startDate:r.start_date||"",dueDate:r.due_date||"",actualDate:r.actual_date||"",estimatedHours:r.estimated_hours||"",urgent:!!r.urgent,completedDate:r.completed_date||null,archived:!!r.archived};}
 function taskToDb(t){return{id:t.id,brand:t.brand,theme:t.theme,comments:t.comments,status:t.status,owners:t.owners,start_date:t.startDate,due_date:t.dueDate,actual_date:t.actualDate,estimated_hours:t.estimatedHours,urgent:t.urgent,completed_date:t.completedDate,archived:t.archived};}
 function dbToPTask(r){return{id:r.id,title:r.title||"",category:r.category||"",owner:r.owner||"Dio",status:r.status||"Pendiente",dueDate:r.due_date||"",notes:r.notes||""};}
@@ -260,7 +277,7 @@ async function dbLoadAll(){
   var r1=await sb.from("tasks").select("*").order("created_at",{ascending:true});
   var r2=await sb.from("partner_tasks").select("*").order("created_at",{ascending:true});
   var r3=await sb.from("team_members").select("*");
-  if(r1.data&&r1.data.length>0){tasks=r1.data.map(dbToTask);}
+  if(r1.data&&r1.data.length>0){tasks=r1.data.map(dbToTask);BRANDS=getBrands();refreshBrandSelects();}
   if(r2.data&&r2.data.length>0){partnerTasks=r2.data.map(dbToPTask);}
   if(r3.data&&r3.data.length>0){teamData=r3.data;TEAMS=getTeams();}
   render();
@@ -275,17 +292,21 @@ async function dbDeleteMember(name){await sb.from("team_members").delete().eq("n
 const DEFAULT_TEAMS = ["Dio","Santi","Luisina","Luli","Ori"];
 const DEFAULT_OWNER_COLORS = {Dio:"#3b82f6",Santi:"#f97316",Luisina:"#ec4899",Luli:"#a855f7",Ori:"#14b8a6"};
 const COLOR_POOL = ["#3b82f6","#f97316","#ec4899","#a855f7","#14b8a6","#f59e0b","#10b981","#ef4444","#8b5cf6","#06b6d4"];
+const DEFAULT_BRANDS = ["Mi Pileta","Antequera Muebles","Avanti Club","Coarmi","Froz","Urucap","Academia Buenos Aires","ANM","Otro"];
 
 let teamData = JSON.parse(localStorage.getItem("anm_team")||"null") || DEFAULT_TEAMS.map((n,i)=>({name:n,color:DEFAULT_OWNER_COLORS[n]||COLOR_POOL[i%COLOR_POOL.length],role:""}));
 
 function getTeams() { return teamData.map(t=>t.name); }
 function getOwnerColor(name) { const t=teamData.find(x=>x.name===name); return t?t.color:"#475569"; }
 function saveTeam() { localStorage.setItem("anm_team",JSON.stringify(teamData)); }
+let brandData = JSON.parse(localStorage.getItem("anm_brands")||"null") || DEFAULT_BRANDS;
+function getBrands() { return [...new Set([...brandData,...tasks.map(t=>t.brand).filter(Boolean)])]; }
+function saveBrands() { localStorage.setItem("anm_brands",JSON.stringify(brandData)); }
 
 let TEAMS = getTeams();
 let OWNER_COLORS = {};
+let BRANDS = [];
 const STATUSES = ["Por hacer","En progreso","En revision","Aprobado","Completado"];
-const BRANDS = ["Mi Pileta","Antequera Muebles","Avanti Club","Coarmi","Froz","Urucap","Academia Buenos Aires","ANM","Otro"];
 const PARTNERS_PASS = "anm2024";
 const PARTNER_CATS = ["Finanzas","Estrategia","Clientes","Equipo","Operaciones","Otro"];
 const PARTNER_STATUSES = ["Pendiente","En curso","Hecho"];
@@ -315,6 +336,7 @@ const SAMPLE_TASKS = [
 
 let tasks = JSON.parse(localStorage.getItem("anm_tasks")||"null") || SAMPLE_TASKS;
 tasks = tasks.map(t=>({...t,status:normalizeStatus(t.status)}));
+BRANDS = getBrands();
 let partnerTasks = JSON.parse(localStorage.getItem("anm_partner_tasks")||"null") || [];
 let currentTab = "tasks";
 let isPartner = false;
@@ -332,6 +354,15 @@ function uid() { return Date.now()+Math.random().toString(36).slice(2); }
 function today() { return new Date().toISOString().split("T")[0]; }
 function daysLeft(d) { return Math.ceil((new Date(d)-new Date(today()))/86400000); }
 function fmt(d) { if(!d)return"-"; const [y,m,day]=d.split("-"); return `${day}/${m}/${y}`; }
+function refreshBrands() { BRANDS=getBrands(); refreshBrandSelects(); }
+function refreshBrandSelects(extraBrand) {
+  const fb=document.getElementById("f-brand");
+  if(!fb)return;
+  const current=extraBrand||fb.value;
+  const opts=[...new Set([...brandData,extraBrand].filter(Boolean))];
+  fb.innerHTML=opts.map(b=>`<option value="${b}">${b}</option>`).join("");
+  if(current&&opts.includes(current))fb.value=current;
+}
 
 function setTab(t) {
   currentTab=t;
@@ -361,6 +392,7 @@ function closeModalOnBg(e,id){if(e.target===e.currentTarget)closeModal(id);}
 
 function openNewTask() {
   editingTaskId=null; selectedOwners=[];
+  refreshBrandSelects();
   document.getElementById("modal-title").textContent="Nueva tarea";
   document.getElementById("f-theme").value="";
   document.getElementById("f-comments").value="";
@@ -370,12 +402,14 @@ function openNewTask() {
   document.getElementById("f-hours").value="";
   document.getElementById("f-urgent").checked=false;
   document.getElementById("f-status").value="Por hacer";
+  if(brandData.length)document.getElementById("f-brand").value=brandData[0];
   renderOwnerBtns();
   document.getElementById("task-modal").classList.remove("hidden");
 }
 function openEditTask(id) { if(id&&id.target){id=id.target.dataset.id||id.currentTarget.dataset.id;}
   const t = tasks.find(x=>x.id===id); if(!t)return;
   editingTaskId=id; selectedOwners=[...t.owners];
+  refreshBrandSelects(t.brand);
   document.getElementById("modal-title").textContent="Editar tarea";
   document.getElementById("f-brand").value=t.brand;
   document.getElementById("f-theme").value=t.theme;
@@ -439,11 +473,11 @@ async function archiveTask(id){tasks=tasks.map(t=>t.id===id?{...t,archived:true}
 async function deleteTask(id){if(confirm("Eliminar esta tarea?")){tasks=tasks.filter(t=>t.id!==id);save();try{await dbDeleteTask(id);}catch(e){console.warn(e);}render();}}
 
 // Partner tasks
-function openNewPTask(){editingPTaskId=null;document.getElementById("pt-modal-title").textContent="Nueva tarea de socios";document.getElementById("pt-title").value="";document.getElementById("pt-notes").value="";document.getElementById("pt-due").value="";document.getElementById("pt-status").value="Pendiente";document.getElementById("pt-modal").classList.remove("hidden");}
+function openNewPTask(){editingPTaskId=null;document.getElementById("pt-modal-title").textContent="Nueva tarea admin";document.getElementById("pt-title").value="";document.getElementById("pt-notes").value="";document.getElementById("pt-due").value="";document.getElementById("pt-status").value="Pendiente";document.getElementById("pt-modal").classList.remove("hidden");}
 function openEditPTask(id){
   const t=partnerTasks.find(x=>x.id===id);if(!t)return;
   editingPTaskId=id;
-  document.getElementById("pt-modal-title").textContent="Editar tarea de socios";
+  document.getElementById("pt-modal-title").textContent="Editar tarea admin";
   document.getElementById("pt-title").value=t.title;
   document.getElementById("pt-cat").value=t.category;
   document.getElementById("pt-owner").value=t.owner;
@@ -645,8 +679,8 @@ function renderPartners(){
 
   const statsH=[
     {label:"Tareas agencia activas",val:totalActive,color:"#3b82f6"},
-    {label:"Socios pendientes",val:pendCount+cursoCount,color:"#f97316"},
-    {label:"Socios completadas",val:hechoCount,color:"#22c55e"},
+    {label:"Admin pendientes",val:pendCount+cursoCount,color:"#f97316"},
+    {label:"Admin completadas",val:hechoCount,color:"#22c55e"},
   ].map(function(s){return '<div class="stat-card" style="border:1px solid '+s.color+'33"><div class="stat-num" style="color:'+s.color+'">'+s.val+'</div><div class="stat-label">'+s.label+'</div></div>';}).join("");
 
   const personRows=byOwner.map(function(o){
@@ -660,7 +694,7 @@ function renderPartners(){
   const catOpts=["Todas",...PARTNER_CATS].map(function(c){return '<option value="'+c+'"'+(fc===c?' selected':'')+'>'+c+'</option>';}).join("");
   const stOpts=[{v:"Activas",l:"Activas"},{v:"Todas",l:"Todas"},...PARTNER_STATUSES.map(function(s){return{v:s,l:s};})].map(function(o){return '<option value="'+o.v+'"'+(fs===o.v?' selected':'')+'>'+o.l+'</option>';}).join("");
 
-  const ptRows=filteredP.length===0?'<div style="padding:40px;text-align:center;color:#334155;font-size:14px">No hay tareas de socios</div>':
+  const ptRows=filteredP.length===0?'<div style="padding:40px;text-align:center;color:#334155;font-size:14px">No hay tareas admin</div>':
     filteredP.map(function(pt,i){
       const ss=PARTNER_STATUS_STYLES[pt.status]||PARTNER_STATUS_STYLES["Pendiente"];
       const catColor=CAT_COLORS[pt.category]||"#475569";
@@ -691,23 +725,31 @@ function renderPartners(){
   const memberRows=teamData.map(function(m){
     const safeRole=(m.role||"").replace(/"/g,"&quot;");
     const safeName=m.name.replace(/'/g,"\\'");
-    return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #1e293b44">'
+    return '<div class="admin-row">'
       +'<span class="avatar" data-member="'+m.name+'" style="width:36px;height:36px;background:'+m.color+';font-size:14px;flex-shrink:0">'+m.name[0]+'</span>'
-      +'<div style="flex:1">'
+      +'<div class="admin-row-main">'
         +'<span style="font-size:14px;font-weight:700;color:#f1f5f9">'+m.name+'</span>'
         +(m.role?'<span style="font-size:11px;color:#94a3b8;margin-left:8px">'+m.role+'</span>':"")
       +'</div>'
-      +'<div style="display:flex;align-items:center;gap:8px">'
-        +'<input type="text" value="'+safeRole+'" placeholder="Rol (ej: Disenadora)" style="background:#1e293b;border:1px solid #334155;border-radius:6px;color:#f1f5f9;padding:5px 10px;font-size:12px;width:160px;outline:none" onchange="updateMemberRole(\''+safeName+'\',this.value)"/>'
+      +'<div class="admin-actions">'
+        +'<input type="text" value="'+safeRole+'" placeholder="Rol (ej: Disenadora)" class="admin-input medium" onchange="updateMemberRole(\''+safeName+'\',this.value)"/>'
         +'<input type="color" value="'+m.color+'" style="width:32px;height:32px;border:none;border-radius:6px;cursor:pointer;padding:0" onchange="updateMemberColor(\''+safeName+'\',this.value)" title="Color del avatar"/>'
-        +'<button class="action-btn" style="color:#ef4444;border-color:#ef444433" onclick="removeTeamMember(\''+safeName+'\')" title="Eliminar">&#128465;&#65039;</button>'
+        +'<button class="action-btn" style="color:#ef4444;border-color:#ef444433" onclick="removeTeamMember(\''+safeName+'\')" title="Eliminar">Eliminar</button>'
       +'</div>'
     +'</div>';
   }).join("");
 
   const nextColor=COLOR_POOL[teamData.length%COLOR_POOL.length];
+  const companyRows=brandData.map(function(b){
+    const safeBrand=b.replace(/'/g,"\\'");
+    const count=tasks.filter(t=>t.brand===b).length;
+    return '<div class="admin-row">'
+      +'<div class="admin-row-main"><span style="font-size:14px;font-weight:700;color:#f1f5f9">'+b+'</span><span style="font-size:11px;color:#64748b;margin-left:8px">'+count+' tarea'+(count!==1?'s':'')+'</span></div>'
+      +'<button class="action-btn" style="color:#ef4444;border-color:#ef444433" onclick="removeBrand(\''+safeBrand+'\')" title="Eliminar">Eliminar</button>'
+    +'</div>';
+  }).join("");
 
-  return '<h2 style="color:#f97316;font-size:18px;font-weight:800;margin:0 0 24px">&#128274; Panel de socios</h2>'
+  return '<h2 style="color:#f97316;font-size:18px;font-weight:800;margin:0 0 24px">Panel admin</h2>'
     +'<div class="partners-stats">'+statsH+'</div>'
     +'<div class="two-col">'
       +'<div class="panel"><h3>Carga por persona</h3>'+personRows+'</div>'
@@ -715,7 +757,7 @@ function renderPartners(){
     +'</div>'
     +'<div class="partner-tasks-box">'
       +'<div class="partner-tasks-header">'
-        +'<div><h3 style="margin:0;color:#f97316;font-weight:800;font-size:15px">&#129309; Tareas de socios</h3><p style="margin:2px 0 0;color:#475569;font-size:12px">Privado &middot; Solo Dio y Santi</p></div>'
+        +'<div><h3 style="margin:0;color:#f97316;font-weight:800;font-size:15px">Tareas admin</h3><p style="margin:2px 0 0;color:#475569;font-size:12px">Privado</p></div>'
         +'<div style="display:flex;gap:8px;align-items:center">'
           +'<select class="inp" id="pt-filter-cat" style="width:auto;font-size:12px;padding:5px 10px" onchange="render()">'+catOpts+'</select>'
           +'<select class="inp" id="pt-filter-st" style="width:auto;font-size:12px;padding:5px 10px" onchange="render()">'+stOpts+'</select>'
@@ -724,18 +766,31 @@ function renderPartners(){
       +'</div>'
       +'<div>'+ptRows+'</div>'
     +'</div>'
-    +'<div style="margin-top:28px;background:#0a0c14;border:1px solid #3b82f622;border-radius:16px;overflow:hidden">'
-      +'<div style="padding:18px 24px;border-bottom:1px solid #3b82f622;background:#0f1218">'
-        +'<h3 style="margin:0;color:#3b82f6;font-weight:800;font-size:15px">&#128101; Gestion del equipo</h3>'
-        +'<p style="margin:2px 0 0;color:#475569;font-size:12px">Agrega o remove miembros del equipo</p>'
+    +'<div class="admin-section">'
+      +'<div class="admin-section-head">'
+        +'<h3>Gestion del equipo</h3>'
+        +'<p>Agrega o quita empleados del equipo</p>'
       +'</div>'
-      +'<div style="padding:20px 24px">'
+      +'<div class="admin-section-body">'
         +memberRows
-        +'<div style="display:flex;gap:8px;align-items:center;margin-top:16px;flex-wrap:wrap">'
-          +'<input type="text" id="new-member-name" placeholder="Nombre" style="background:#1e293b;border:1px solid #334155;border-radius:8px;color:#f1f5f9;padding:7px 12px;font-size:13px;width:130px;outline:none"/>'
-          +'<input type="text" id="new-member-role" placeholder="Rol (opcional)" style="background:#1e293b;border:1px solid #334155;border-radius:8px;color:#f1f5f9;padding:7px 12px;font-size:13px;width:160px;outline:none"/>'
+        +'<div class="admin-form">'
+          +'<input type="text" id="new-member-name" class="admin-input small" placeholder="Nombre"/>'
+          +'<input type="text" id="new-member-role" class="admin-input medium" placeholder="Rol (opcional)"/>'
           +'<input type="color" id="new-member-color" value="'+nextColor+'" style="width:36px;height:36px;border:none;border-radius:8px;cursor:pointer;padding:0" title="Color"/>'
           +'<button class="btn-save" style="background:#3b82f6;padding:7px 18px;font-size:13px" onclick="addTeamMember()">+ Agregar</button>'
+        +'</div>'
+      +'</div>'
+    +'</div>'
+    +'<div class="admin-section">'
+      +'<div class="admin-section-head">'
+        +'<h3>Gestion de empresas</h3>'
+        +'<p>Agrega o quita empresas del selector de marcas</p>'
+      +'</div>'
+      +'<div class="admin-section-body">'
+        +companyRows
+        +'<div class="admin-form">'
+          +'<input type="text" id="new-brand-name" class="admin-input medium" placeholder="Nombre de empresa"/>'
+          +'<button class="btn-save" style="background:#3b82f6;padding:7px 18px;font-size:13px" onclick="addBrand()">+ Agregar</button>'
         +'</div>'
       +'</div>'
     +'</div>';
@@ -754,6 +809,7 @@ async function addTeamMember() {
   }
   var newMember={name, color:colorEl.value, role:roleEl.value.trim()};
   teamData.push(newMember);
+  saveTeam();
   try{await dbSaveTeam();}catch(e){console.warn(e);}
   refreshTeams(); nameEl.value=""; roleEl.value=""; render();
 }
@@ -761,19 +817,48 @@ async function addTeamMember() {
 async function removeTeamMember(name) {
   if (!confirm(`Eliminar a ${name} del equipo?`)) return;
   teamData = teamData.filter(t => t.name !== name);
+  saveTeam();
   try{await dbDeleteMember(name);}catch(e){console.warn(e);}
   refreshTeams(); render();
 }
 
 async function updateMemberColor(name, color) {
   teamData = teamData.map(t => t.name === name ? {...t, color} : t);
+  saveTeam();
   try{await dbSaveTeam();}catch(e){console.warn(e);}
   document.querySelectorAll(`[data-member="${name}"]`).forEach(el => el.style.background = color);
 }
 
 async function updateMemberRole(name, role) {
   teamData = teamData.map(t => t.name === name ? {...t, role} : t);
+  saveTeam();
   try{await dbSaveTeam();}catch(e){console.warn(e);}
+}
+
+function addBrand() {
+  const input=document.getElementById("new-brand-name");
+  const name=(input&&input.value||"").trim();
+  if(!name)return;
+  if(brandData.some(b=>b.toLowerCase()===name.toLowerCase())){
+    alert("Ya existe una empresa con ese nombre."); return;
+  }
+  brandData.push(name);
+  brandData.sort((a,b)=>a.localeCompare(b));
+  saveBrands();
+  refreshBrands();
+  input.value="";
+  render();
+}
+
+function removeBrand(name) {
+  const count=tasks.filter(t=>t.brand===name).length;
+  const msg=count?`Quitar ${name} del catalogo? Las ${count} tarea${count!==1?'s':''} existentes no se borran.`:`Quitar ${name} del catalogo?`;
+  if(!confirm(msg))return;
+  brandData=brandData.filter(b=>b!==name);
+  if(filterBrand===name)filterBrand="Todas";
+  saveBrands();
+  refreshBrands();
+  render();
 }
 
 function render() {
@@ -788,7 +873,7 @@ function render() {
 
 // Init selects
 (function(){
-  const fb=document.getElementById("f-brand"); BRANDS.forEach(b=>{const o=document.createElement("option");o.value=b;o.textContent=b;fb.appendChild(o);});
+  refreshBrandSelects();
   const fs=document.getElementById("f-status"); STATUSES.forEach(s=>{const o=document.createElement("option");o.value=s;o.textContent=s;fs.appendChild(o);});
   const pc=document.getElementById("pt-cat"); PARTNER_CATS.forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=c;pc.appendChild(o);});
   const ps=document.getElementById("pt-status"); PARTNER_STATUSES.forEach(s=>{const o=document.createElement("option");o.value=s;o.textContent=s;ps.appendChild(o);});
