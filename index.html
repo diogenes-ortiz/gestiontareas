@@ -446,12 +446,13 @@ async function saveTask() {
   const theme=document.getElementById("f-theme").value.trim();
   if(!theme)return;
   const form={brand,theme,comments:document.getElementById("f-comments").value,status:document.getElementById("f-status").value,owners:[...selectedOwners],startDate:document.getElementById("f-start").value,dueDate:document.getElementById("f-due").value,actualDate:document.getElementById("f-actual").value,estimatedHours:document.getElementById("f-hours").value,urgent:document.getElementById("f-urgent").checked};
+  const done=form.status==="Completado";
   var task;
   if(editingTaskId){
-    tasks=tasks.map(t=>t.id===editingTaskId?{...t,...form}:t);
+    tasks=tasks.map(t=>t.id===editingTaskId?{...t,...form,actualDate:done&&!form.actualDate?today():form.actualDate,completedDate:done?(t.completedDate||today()):t.completedDate,archived:done?true:t.archived}:t);
     task=tasks.find(t=>t.id===editingTaskId);
   } else {
-    task={...form,id:uid(),completedDate:null,archived:false};
+    task={...form,id:uid(),actualDate:done&&!form.actualDate?today():form.actualDate,completedDate:done?today():null,archived:done};
     tasks.push(task);
   }
   save();
@@ -462,7 +463,8 @@ async function changeStatus(id,status) {
   status=normalizeStatus(status);
   tasks=tasks.map(t=>{
     if(t.id!==id)return t;
-    return {...t,status,completedDate:status==="Completado"?today():t.completedDate,actualDate:status==="Completado"&&!t.actualDate?today():t.actualDate};
+    const done=status==="Completado";
+    return {...t,status,completedDate:done?today():t.completedDate,actualDate:done&&!t.actualDate?today():t.actualDate,archived:done?true:t.archived};
   });
   save();
   var task=tasks.find(t=>t.id===id);
