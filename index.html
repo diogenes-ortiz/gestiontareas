@@ -507,7 +507,8 @@ function statusBadge(status,taskId){
   status=normalizeStatus(status);
   const s=STATUS_STYLES[status]||STATUS_STYLES["Por hacer"];
   const menuId=`menu-${taskId}`;
-  const opts=STATUSES.map(st=>{const ss=STATUS_STYLES[st];return `<div class="badge-opt" style="color:${ss.text};background:${st===status?ss.bg:"transparent"}" onmouseenter="this.style.background='${ss.bg}'" onmouseleave="this.style.background='${st===status?ss.bg:"transparent"}'" onclick="changeStatus(${taskId},'${st}');closeBadgeMenus()"><span class="dot" style="background:${ss.dot}"></span>${st}</div>`;}).join("");
+  const safeId=String(taskId).replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+  const opts=STATUSES.map(st=>{const ss=STATUS_STYLES[st];return `<div class="badge-opt" style="color:${ss.text};background:${st===status?ss.bg:"transparent"}" onmouseenter="this.style.background='${ss.bg}'" onmouseleave="this.style.background='${st===status?ss.bg:"transparent"}'" onclick="changeStatus('${safeId}','${st}');closeBadgeMenus()"><span class="dot" style="background:${ss.dot}"></span>${st}</div>`;}).join("");
   return `<div class="badge" style="background:${s.bg};color:${s.text};border-color:${s.dot}44" onclick="toggleMenu('${menuId}')"><span class="dot" style="background:${s.dot}"></span>${status}<span class="arrow">v</span><div class="badge-menu" id="${menuId}">${opts}</div></div>`;
 }
 
